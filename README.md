@@ -1,4 +1,5 @@
 # sort-images-by-color
+<<<<<<< HEAD
 
 TO-DO: Add venv to .gitignore
 TO-DO: Add UUID to avoid image overwrites
@@ -12,3 +13,5 @@ Requirements:
 fastapi
 python-multipart
 uvicorn
+=======
+>>>>>>> 9e737c927dc6b5661679bcf506a9c846de2df596
