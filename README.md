@@ -9,6 +9,6 @@ TO-DO: in image sort...
 -Resize + blur before analysis?
 
 Requirements:
-fastapi?
+fastapi
 python-multipart
 uvicorn
