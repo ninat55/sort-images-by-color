@@ -1,17 +1,31 @@
 # sort-images-by-color
-<<<<<<< HEAD
 
-TO-DO: Add venv to .gitignore
-TO-DO: Add UUID to avoid image overwrites
-TO-DO: BIG - ADD MULTIPLE UPLOADS AT ONCE!
-TO-DO: in image sort...
--Ignore low-saturation pixels?
--Crop center region?
--Resize + blur before analysis?
+A web app for uploading images and sorting them by color.
 
-Requirements:
-fastapi
-python-multipart
-uvicorn
-=======
->>>>>>> 9e737c927dc6b5661679bcf506a9c846de2df596
+## Requirements
+
+```bash
+pip install -r requirements.txt
+```
+
+## Running the App
+
+### Backend
+
+source env/bin/activate
+uvicorn main:app --reload
+
+### Frontend
+
+cd frontend
+npm install
+npm run dev
+
+## Planned Improvements
+
+- add UUIDs to avoid image overwrites
+- support multiple uploads
+- improve color analysis
+  - ignore low-saturation pixels
+  - crop center region
+  - resize and blur before analysis
