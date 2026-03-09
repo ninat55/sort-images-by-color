@@ -2,16 +2,7 @@
   padding: 0;
 }
 
-.gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, 100px);
-  gap: 8px;
-  align-content: start;
-  justify-content: center;
-  justify-items: center;
-}
-
-.upload {
+.upload-image {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -20,5 +11,22 @@
   padding: 12px;
 
   margin-top: 15px;
+}
+
+.save-url {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
   margin-bottom: 25px;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 100px);
+  gap: 8px;
+  align-content: start;
+  justify-content: center;
+  justify-items: center;
 }

@@ -27,9 +27,12 @@ npm run dev
 
 ## Planned improvements
 
+- add support for already hosted image URLs
+- delete functionality (for both image uploads and URLs)
+- ? check for duplicate URLs (and maybe images)
 - add UUIDs to avoid image overwrites
-- support multiple uploads
-- improve color analysis
+- support multiple uploads at a time
+- ? improve color analysis
   - ignore low-saturation pixels
   - crop center region
   - resize and blur before analysis

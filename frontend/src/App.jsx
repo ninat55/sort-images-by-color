@@ -6,9 +6,7 @@ const API_BASE = 'http://localhost:8000'
 function App() {
   const [file, setFile] = useState(null);
   const [files, setFiles] = useState([]);
-
-  
-  // helper functions
+  const [url, setUrl] = useState('')
 
   async function refresh() {
     const res = await fetch(`${API_BASE}/uploads-list`);
@@ -27,12 +25,27 @@ function App() {
     const formData = new FormData();
     formData.append("file", file);
 
-    await fetch(`${API_BASE}/upload`, {
+    await fetch(`${API_BASE}/upload-image`, {
       method: "POST",
       body: formData,
     });
 
-    // also refresh gallery
+    setFile(null);
+    refresh();
+  }
+
+  async function saveUrl() {
+    if (!url.trim()) return;
+
+    await fetch(`${API_BASE}/save-url`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({url}),
+    });
+
+    setUrl('');
     refresh();
   }
 
@@ -45,21 +58,27 @@ function App() {
 
   return (
   <div>
-    <div className='upload'>
-      {/* User selects a file */}
+    <div className='upload-image'>
       <input type="file" onChange={handleFile} />
-
-      {/* Show filename ONLY if file exists */}
       {file && <p>Selected file: {file.name}</p>}
-
-      {/* User clicks to upload */}
       <button onClick={uploadFile}>Upload</button>
     </div>
 
-    {/* Always show gallery */}
+    <div className="save-url">
+      <input
+        type="text"
+        placeholder="Paste image URL"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+      />
+      <button onClick={saveUrl}>Add URL</button>
+    </div>
+
     <div className='gallery'>
-      {files.map(name => 
-                (<img key={name} src={`${API_BASE}/uploads/${encodeURIComponent(name)}`} width={100}/> ))}
+      {files.map((item) => (<img key={item.src} 
+                                 src={item.type == "file" ? `${API_BASE}/uploads/${encodeURIComponent(item.src)}`
+                                                        : item.src}
+                                 width={100}/>))}
     </div>
   </div>
 );
