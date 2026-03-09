@@ -8,20 +8,24 @@ A web app for uploading images and sorting them by color.
 pip install -r requirements.txt
 ```
 
-## Running the App
+## Running the app
 
 ### Backend
 
+```bash
 source env/bin/activate
 uvicorn main:app --reload
+```
 
 ### Frontend
 
+```bash
 cd frontend
 npm install
 npm run dev
+```
 
-## Planned Improvements
+## Planned improvements
 
 - add UUIDs to avoid image overwrites
 - support multiple uploads
