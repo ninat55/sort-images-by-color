@@ -18,6 +18,10 @@ import numpy as np
 class URLRequest(BaseModel):
     url: str
 
+class DeleteRequest(BaseModel):
+    type: str
+    src: str
+
 class ImageAngle(TypedDict):
     type: str
     src: str
@@ -76,6 +80,27 @@ async def save_url(data: URLRequest):
         f.write(data.url + "\n")
     return {"url": data.url}
 
+@app.post("/delete-image")
+async def delete_image(data: DeleteRequest):
+    if data.type == "file":
+        path = UPLOAD_DIR / data.src
+        if path.exists():
+            path.unlink()
+            return {"message": f"Deleted file {data.src}"}
+        else:
+            raise HTTPException(status_code=404, detail="File not found")
+    elif data.type == "url":
+        urls = load_hosted_urls()
+        if data.src in urls:
+            urls.remove(data.src)
+            with open(URL_FILE, "w") as f:
+                f.write("\n".join(urls) + "\n")
+            return {"message": f"Deleted URL {data.src}"}
+        else:
+            raise HTTPException(status_code=404, detail="URL not found")
+    else:
+        raise HTTPException(status_code=400, detail="Invalid image type")
+
 @app.get("/uploads-list")
 async def uploads_list():
     images: list[ImageAngle] = []
@@ -122,10 +147,8 @@ async def uploads_list():
 def load_hosted_urls():
     if not URL_FILE.exists():
         return []
-
     with open(URL_FILE, "r") as f:
-        urls = f.read().splitlines()
-    return urls
+        return [line.strip() for line in f if line.strip()]
 
 # Image processing
 

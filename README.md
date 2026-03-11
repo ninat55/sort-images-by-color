@@ -1,6 +1,6 @@
 # sort-images-by-color
 
-A web app for uploading images and sorting them by color.
+A web app for uploading images and sorting them by color. Designed for 1:1 aspect ratio images, displayed as 100×100px thumbnails.
 
 ## Requirements
 
@@ -27,9 +27,8 @@ npm run dev
 
 ## Planned improvements
 
-- add support for already hosted image URLs
-- delete functionality (for both image uploads and URLs)
-- ? check for duplicate URLs (and maybe images)
+- ? don't add invalid URLs (no http) to hosted_urls.txt
+- check for duplicate URLs (and maybe images)
 - add UUIDs to avoid image overwrites
 - support multiple uploads at a time
 - ? improve color analysis

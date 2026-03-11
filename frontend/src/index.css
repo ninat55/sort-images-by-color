@@ -52,6 +52,16 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+.color img {
+  filter: grayscale(0%);
+  transition: filter 0.5s ease;
+}
+
+.color img:hover {
+  filter: grayscale(100%);
+  transition: filter 0.5s ease;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
