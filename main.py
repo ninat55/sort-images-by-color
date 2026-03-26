@@ -18,9 +18,10 @@ import numpy as np
 class URLRequest(BaseModel):
     url: str
 
-class DeleteRequest(BaseModel):
+class ImageRequest(BaseModel):
     type: str
     src: str
+    angle: int
 
 class ImageAngle(TypedDict):
     type: str
@@ -58,13 +59,21 @@ async def root():
 
 @app.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
-    validate(file)
-    await save(file)    
-    return {"filename": file.filename, "content_type": file.content_type}
+    validate_file(file)
+    await save(file)
 
-def validate(file: UploadFile):
+    path = UPLOAD_DIR / file.filename
+
+    try:
+        angle = avg_rgb(load_image_file(path))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to process image: {e}")
+
+    return {"type": "file", "src": file.filename, "angle": angle}
+
+def validate_file(file: UploadFile):
     if file.content_type not in ALLOWED_TYPES:
-        raise HTTPException(status_code=415, detail="Only JPEG/PNG/WEBP images are supported.")
+        raise HTTPException(status_code=415, detail="Only JPEG/PNG/WEBP/GIF images are supported.")
 
 async def save(file: UploadFile):
     filename = file.filename
@@ -78,28 +87,44 @@ async def save_url(data: URLRequest):
     # TODO: Validate URL!
     with open(URL_FILE, "a") as f:
         f.write(data.url + "\n")
-    return {"url": data.url}
+    
+    try:
+        angle = avg_rgb(load_image_url(data.url))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to load image from URL: {e}")
 
+    return {"type": "url", "src": data.url, "angle": angle}
+
+# TODO: REVIEW
 @app.post("/delete-image")
-async def delete_image(data: DeleteRequest):
+async def delete_image(data: ImageRequest):
     if data.type == "file":
-        path = UPLOAD_DIR / data.src
-        if path.exists():
-            path.unlink()
-            return {"message": f"Deleted file {data.src}"}
-        else:
+        filename = Path(data.src).name
+        path = UPLOAD_DIR / filename
+
+        if not path.exists():
             raise HTTPException(status_code=404, detail="File not found")
+
+        path.unlink()
+        return {"ok": True}
+
     elif data.type == "url":
         urls = load_hosted_urls()
-        if data.src in urls:
-            urls.remove(data.src)
-            with open(URL_FILE, "w") as f:
-                f.write("\n".join(urls) + "\n")
-            return {"message": f"Deleted URL {data.src}"}
-        else:
+
+        if data.src not in urls:
             raise HTTPException(status_code=404, detail="URL not found")
-    else:
-        raise HTTPException(status_code=400, detail="Invalid image type")
+
+        urls.remove(data.src)
+
+        with open(URL_FILE, "w") as f:
+            if urls:
+                f.write("\n".join(urls) + "\n")
+            else:
+                f.write("")
+
+        return {"ok": True}
+
+    raise HTTPException(status_code=400, detail="Invalid image type")
 
 @app.get("/uploads-list")
 async def uploads_list():
@@ -141,7 +166,12 @@ async def uploads_list():
             continue
 
     images.sort(key=lambda img: img["angle"])
-    files = [{"type": img["type"], "src": img["src"]} for img in images]
+    files = [{"type": img["type"], "angle": img["angle"], "src": img["src"]} for img in images]
+    return {"files": files}
+
+@app.post("/sort")
+async def sort(files: list[ImageRequest]):
+    files.sort(key=lambda item: item.angle)
     return {"files": files}
 
 def load_hosted_urls():

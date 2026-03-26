@@ -4,6 +4,7 @@
 
 .uploads {
   display: flex;
+  align-items: flex-start;
   justify-content: center;
   gap: 150px;
   margin: 25px;

@@ -16,6 +16,19 @@ function App() {
     setFiles(data.files);
   }
 
+  async function sort(filesToSort) {
+    const res = await fetch(`${API_BASE}/sort`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(filesToSort),
+    });
+
+    const data = await res.json();
+    setFiles(data.files);
+  }
+
   function handleFile(event) {
     const file = event.target.files[0];
     setFile(file);
@@ -27,32 +40,38 @@ function App() {
     const formData = new FormData();
     formData.append("file", file);
 
-    await fetch(`${API_BASE}/upload-image`, {
+    const res = await fetch(`${API_BASE}/upload-image`, {
       method: "POST",
       body: formData,
     });
 
+    const newItem = await res.json();
+
     setFile(null);
-    refresh();
+    const updatedFiles = [...files, newItem].sort((a, b) => a.angle - b.angle);
+    setFiles(updatedFiles);
   }
 
   async function saveUrl() {
     if (!url.trim()) return;
 
-    await fetch(`${API_BASE}/save-url`, {
+    const res = await fetch(`${API_BASE}/save-url`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({url}),
+      body: JSON.stringify({ url }),
     });
 
-    setUrl('');
-    refresh();
+    const newItem = await res.json();
+
+    setUrl("");
+    const updatedFiles = [...files, newItem].sort((a, b) => a.angle - b.angle);
+    setFiles(updatedFiles);
   }
 
   async function handleDelete(itemToDelete) {
-    await fetch(`${API_BASE}/delete-image`, {
+    const res = await fetch(`${API_BASE}/delete-image`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -60,7 +79,15 @@ function App() {
       body: JSON.stringify(itemToDelete),
     });
 
-    refresh();
+    if (!res.ok) return;
+
+    const updatedFiles = files
+      .filter(item =>
+            !(item.type === itemToDelete.type &&
+              item.src === itemToDelete.src))
+      .sort((a, b) => a.angle - b.angle);
+  
+    setFiles(updatedFiles);
   }
 
   async function copyHtml() {  // check if needs refresh first
@@ -86,7 +113,7 @@ function App() {
     <div className='uploads'>
       <div className='upload-image'>
         <input type="file" onChange={handleFile} />
-        {file && <p>Selected file: {file.name}</p>}
+        
         <button onClick={uploadFile}>Upload</button>
       </div>
 

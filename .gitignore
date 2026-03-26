@@ -25,3 +25,6 @@ uploads/
 
 # Logs
 *.log
+
+# Planned improvements
+planned_improvements.txt

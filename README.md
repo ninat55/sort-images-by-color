@@ -27,6 +27,11 @@ npm run dev
 
 ## Planned improvements
 
+- improve performance!
+  - save image angles - don't recompute
+  - avoid full refresh apart from first load; instead, append/delete
+- fix centering for last line
+- add a delete-all (that requires confirmation)
 - ? don't add invalid URLs (no http) to hosted_urls.txt
 - check for duplicate URLs (and maybe images)
 - add UUIDs to avoid image overwrites
