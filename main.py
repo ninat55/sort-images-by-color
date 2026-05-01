@@ -1,4 +1,6 @@
 from pathlib import Path
+from urllib.parse import urlparse
+import json
 
 from fastapi import FastAPI
 from fastapi import UploadFile, File
@@ -40,6 +42,20 @@ UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 URL_FILE = Path(f"{UPLOAD_DIR}/hosted_urls.txt")
+CACHE_FILE = UPLOAD_DIR / "angle_cache.json"
+
+def load_cache() -> dict:
+    if not CACHE_FILE.exists():
+        return {}
+    with open(CACHE_FILE, "r") as f:
+        return json.load(f)
+
+def save_cache(cache: dict):
+    with open(CACHE_FILE, "w") as f:
+        json.dump(cache, f)
+
+def cache_key(type: str, src: str) -> str:
+    return f"{type}:{src}"
 
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
@@ -69,6 +85,10 @@ async def upload_image(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to process image: {e}")
 
+    cache = load_cache()
+    cache[cache_key("file", file.filename)] = angle
+    save_cache(cache)
+
     return {"type": "file", "src": file.filename, "angle": angle}
 
 def validate_file(file: UploadFile):
@@ -82,16 +102,29 @@ async def save(file: UploadFile):
     with open(path, "wb") as f:
         f.write(contents)
 
+def validate_url(url: str):
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise HTTPException(status_code=400, detail="URL must be a valid http or https address.")
+
 @app.post("/save-url")
 async def save_url(data: URLRequest):
-    # TODO: Validate URL!
-    with open(URL_FILE, "a") as f:
-        f.write(data.url + "\n")
-    
+    validate_url(data.url)
+
+    if data.url in load_hosted_urls():
+        raise HTTPException(status_code=409, detail="URL already exists.")
+
     try:
         angle = avg_rgb(load_image_url(data.url))
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to load image from URL: {e}")
+
+    with open(URL_FILE, "a") as f:
+        f.write(data.url + "\n")
+
+    cache = load_cache()
+    cache[cache_key("url", data.url)] = angle
+    save_cache(cache)
 
     return {"type": "url", "src": data.url, "angle": angle}
 
@@ -106,6 +139,9 @@ async def delete_image(data: ImageRequest):
             raise HTTPException(status_code=404, detail="File not found")
 
         path.unlink()
+        cache = load_cache()
+        cache.pop(cache_key("file", filename), None)
+        save_cache(cache)
         return {"ok": True}
 
     elif data.type == "url":
@@ -122,12 +158,16 @@ async def delete_image(data: ImageRequest):
             else:
                 f.write("")
 
+        cache = load_cache()
+        cache.pop(cache_key("url", data.src), None)
+        save_cache(cache)
         return {"ok": True}
 
     raise HTTPException(status_code=400, detail="Invalid image type")
 
 @app.get("/uploads-list")
 async def uploads_list():
+    cache = load_cache()
     images: list[ImageAngle] = []
 
     for f in UPLOAD_DIR.iterdir():
@@ -137,41 +177,36 @@ async def uploads_list():
             continue
 
         try:
-            angle = avg_rgb(load_image_file(f))
+            key = cache_key("file", f.name)
+            if key in cache:
+                angle = cache[key]
+            else:
+                angle = avg_rgb(load_image_file(f))
+                cache[key] = angle
+                save_cache(cache)
 
-            image: ImageAngle = {
-                "type": "file",
-                "src": f.name,
-                "angle": angle,
-            }
-
-            images.append(image)
+            images.append({"type": "file", "src": f.name, "angle": angle})
         except Exception as e:
             print(f"Failed to load image {f.name}: {e}")
             continue
 
     for url in load_hosted_urls():
         try:
-            angle = avg_rgb(load_image_url(url))
+            key = cache_key("url", url)
+            if key in cache:
+                angle = cache[key]
+            else:
+                angle = avg_rgb(load_image_url(url))
+                cache[key] = angle
+                save_cache(cache)
 
-            image: ImageAngle = {
-                "type": "url",
-                "src": url,
-                "angle": angle,
-            }
-        
-            images.append(image)
+            images.append({"type": "url", "src": url, "angle": angle})
         except Exception as e:
             print(f"Failed to load image from URL {url}: {e}")
             continue
 
     images.sort(key=lambda img: img["angle"])
     files = [{"type": img["type"], "angle": img["angle"], "src": img["src"]} for img in images]
-    return {"files": files}
-
-@app.post("/sort")
-async def sort(files: list[ImageRequest]):
-    files.sort(key=lambda item: item.angle)
     return {"files": files}
 
 def load_hosted_urls():
@@ -240,7 +275,8 @@ def hue_angle(rgb: tuple[int, int, int]):
         h = 60 * (((b - r)/delta) + 2)
     elif c_max == b:
         h = 60 * (((r - g)/delta) + 4)
-    # TODO: handle else (raise exception?)
+    else:
+        h = 0
 
     if h < 0:
         h += 360
