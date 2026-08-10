@@ -2,7 +2,7 @@
 
 A web app that automatically arranges images by hue. Upload local files or add images by URL; the gallery stays sorted by color at all times.
 
-![gallery arranged by hue](assets/sort-by-color-demo.png?v=2)
+![gallery arranged by hue](demo.png)
 
 ---
 
